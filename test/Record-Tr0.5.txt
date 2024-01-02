@@ -1,0 +1,8 @@
+HCI1-TM 
+The number of seed:576
+The running time of the algorithm:0.33
+The proportion of seed nodes:0.0672034
+HCI2-TM 
+The number of seed:555
+The running time of the algorithm:0.317
+The proportion of seed nodes:0.0647532
