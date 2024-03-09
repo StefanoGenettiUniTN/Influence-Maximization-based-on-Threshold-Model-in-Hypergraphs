@@ -5,8 +5,7 @@
 The HCI-TM algorithm (Hypergraph-based Threshold Model) is a threshold propagation algorithm based on the hypergraph model, designed to identify the node set with maximum influence. And the open source code includes hypergraph building module, threshold propagation module, HCI1-TM algorithm module and HCI2-TM algorithm module.
 
 For more details, please refer the following paper:
-> Renquan Zhang, Xilong Qu, Qiang Zhang, Xirong Xu, Sen Pei: Influence Maximization based on Threshold Model in Hypergraphs.
-> arXiv:2306.13458
+>Renquan Zhang, Xilong Qu, Qiang Zhang, Xirong Xu, Sen Pei; Influence maximization based on threshold models in hypergraphs. Chaos 1 February 2024; 34 (2): 023111. https://doi.org/10.1063/5.0178329
 
 
 ## About File
