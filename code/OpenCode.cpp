@@ -1,17 +1,21 @@
-﻿
-#include <iostream>
+﻿#include <iostream>
 #include <fstream>
 #include <math.h>
 #include <deque>
 #include <string>
-#include<cassert>
+#include <cassert>
+#include <vector>
 #include <time.h> 
 using namespace std;
-#define Tr 0.5//HYPEREDGE THRESHOLD
+
+#define Tr 0.8 //HYPEREDGE THRESHOLD
+
+#define MAX_SEED_SET_SIZE 100
+
 // DEFINES THE MAX NUMBER OF NODES IN THE HYPERGRAPH   
 const int Max_Node_Size = 100000;
 // DEFINES THE MAX NUMBER OF HYPEREDGES IN HYPERGRAPH  
-const int Max_Edge_Size = 60000;
+const int Max_Edge_Size = 100000;
 
 // Keeps track of the current number of activated nodes  
 int AC_NODE_NUM = 0;
@@ -70,7 +74,7 @@ struct HYPEREDGE
 	deque <int> Nodeinfo_state;
 };
 // Definition of function 'constructhypergraph'  
-int ConstructHypergraph(NODE(&node)[Max_Node_Size], HYPEREDGE(&hyperedge)[Max_Edge_Size], string filename)
+int ConstructHypergraph(vector<NODE>& node, vector<HYPEREDGE>& hyperedge, string filename)
 {
 	// Open the specified file for reading  
 	ifstream infile(filename);
@@ -137,7 +141,7 @@ int ConstructHypergraph(NODE(&node)[Max_Node_Size], HYPEREDGE(&hyperedge)[Max_Ed
 	return node_num;  // returning number of valid nodes as function output  
 }
 
-void Activation_rule(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Size], int seed[], int seedsize)//A function about activation rules
+void Activation_rule(vector<NODE>& Node, vector<HYPEREDGE>& Hyperedge, int seed[], int seedsize)//A function about activation rules
 {
 	// Initialize a queue to store the IDs of nodes that need to be activated
 	deque<int> queue;
@@ -214,7 +218,7 @@ void Activation_rule(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_
 
 
 // The HGRecover function is used to recover the hypergraph for reuse.  
-void HGRecover(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Size])
+void HGRecover(vector<NODE>& Node, vector<HYPEREDGE>& Hyperedge)
 {
 	// Restore node states  
 	for (int i = 0; i < Max_Node_Size; i++)
@@ -249,7 +253,7 @@ void HGRecover(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Size])
 
 
 // This function checks if the hyperedge with ID hyperedgeid becomes subcritical after removing nodes with IDs nodeid1 and nodeid2.  
-int IsSubcritical(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Size], int nodeid1, int nodeid, int hyperedgeid)
+int IsSubcritical(vector<NODE>& Node, vector<HYPEREDGE>& Hyperedge, int nodeid1, int nodeid, int hyperedgeid)
 {
 	// If either nodeid1 or nodeid is active or if they are the same node, return 0 (indicating the hyperedge is not subcritical).  
 	if ((Node[nodeid1].Active == true) || (Node[nodeid].Active == true) || (nodeid1 == nodeid))
@@ -261,7 +265,7 @@ int IsSubcritical(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Siz
 }
 
 // This function calculates the HCI1 for a single node.  
-int Calculate_Node_HCI1(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Size], int Nodeid)
+int Calculate_Node_HCI1(vector<NODE>& Node, vector<HYPEREDGE>& Hyperedge, int Nodeid)
 {
 	int iter_sum = 0; // Variable to record the count of subcritical paths of length 2.  
 	// Iterate through the hyperedges connected to node Nodeid.  
@@ -285,7 +289,7 @@ int Calculate_Node_HCI1(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Ed
 // This template function initializes the calculation of HCI1 values for all valid nodes in the hypergraph.  
 // It takes two integers n1 and n2 as template parameters.
 template<int n1, int n2>
-void In_Calculate_HCI1(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Size], int(&HCI1)[n1][n2])
+void In_Calculate_HCI1(vector<NODE>& Node, vector<HYPEREDGE>& Hyperedge, int(&HCI1)[n1][n2])
 {
 	for (int i = 0; i < Max_Node_Size; i++)
 	{
@@ -303,7 +307,7 @@ void In_Calculate_HCI1(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edg
 // This template function re-calculates the HCI1 values for the 1-hop neighbors of newly activated nodes.  
 // It takes two integers n3 and n4 as template parameters.  
 template<int n3, int n4>
-void ReCalculate_HCI1(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Size], int(&HCI1)[n3][n4])
+void ReCalculate_HCI1(vector<NODE>& Node, vector<HYPEREDGE>& Hyperedge, int(&HCI1)[n3][n4])
 {
 	int IterMark[Max_Node_Size] = { 0 }; // An array to mark if a node's HCI1 value has been updated.  
 	while (ActiveNodeQueue.size() > 0) // Processes only the 1-hop neighbors of newly activated nodes once.  
@@ -326,7 +330,7 @@ void ReCalculate_HCI1(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge
 
 // The HCI-TM algorithm to select Influence Maximization Set in a hypergraph.  
 // It takes the arrays of nodes and hyperedges, the total number of nodes N, and the number of rounds as input.  
-int HCI1_TM_Algorithm(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Size], int N, int round)
+int HCI1_TM_Algorithm(vector<NODE>& Node, vector<HYPEREDGE>& Hyperedge, int N, int round)
 {
 	int HCI1[Max_Node_Size][2] = { 0 }; // A 2D array to store the IDs of nodes and their corresponding HCI1 values.  
 	bool Seed[Max_Node_Size] = { false }; // An array to track which nodes are selected as seeds.  
@@ -357,7 +361,8 @@ int HCI1_TM_Algorithm(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge
 			RECORD[0][iter_percent - 1] = double(AC_NODE_NUM) / double(N);
 			iter_percent = iter_percent + 1;
 		}
-		if (AC_NODE_NUM >= int(double(N) * ActiveRadio)) // Check if the termination condition is met.  
+		//if (AC_NODE_NUM >= int(double(N) * ActiveRadio)) // Check if the termination condition is met.
+		if(SeedNum>=MAX_SEED_SET_SIZE)
 		{
 			RECORD[0][iter_percent - 1] = double(AC_NODE_NUM) / double(N);
 			break; // Exit the loop if the condition is met.  
@@ -370,7 +375,7 @@ int HCI1_TM_Algorithm(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge
 // Calculate the HCI2 value for a single node in the hypergraph.  
 // The function takes the arrays of nodes and hyperedges, the node ID, and an array of seed statuses as input.  
 template<int n9>
-int Calculate_Node_HCI2(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Size], int Nodeid, int(&Is_Seed)[n9])
+int Calculate_Node_HCI2(vector<NODE>& Node, vector<HYPEREDGE>& Hyperedge, int Nodeid, int(&Is_Seed)[n9])
 {
 	int iter_sum = 0; // The sum of length-2 subcritical paths.
 	int iter_sum1 = 0; // The sum of length-3 subcritical paths.
@@ -395,7 +400,7 @@ int Calculate_Node_HCI2(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Ed
 // The function takes the arrays of nodes and hyperedges, and a 2D array to store the HCI2 values.  
 // It also returns the number of valid nodes.  
 template<int n1, int n2>
-void In_Calculate_HCI2(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Size], int(&HCI2)[n1][n2])
+void In_Calculate_HCI2(vector<NODE>& Node, vector<HYPEREDGE>& Hyperedge, int(&HCI2)[n1][n2])
 {
 	int Is_Seed[Max_Node_Size] = { 0 }; // Initialize the seed status array.  
 	for (int i = 0; i < Max_Node_Size; i++) // Iterate through each node in the hypergraph.  
@@ -412,7 +417,7 @@ void In_Calculate_HCI2(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edg
 
 // Re-calculate the HCI2 values for the 1-layer neighbors of newly activated nodes.  
 template<int n3, int n4>
-void ReCalculate_HCI2(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Size], int(&Node_CI1)[n3][n4], int(&Is_Seed)[n3])
+void ReCalculate_HCI2(vector<NODE>& Node, vector<HYPEREDGE>& Hyperedge, int(&Node_CI1)[n3][n4], int(&Is_Seed)[n3])
 {
 	int IterMark[Max_Node_Size] = { 0 }; // Marker to ensure each node's HCI1 value is calculated only once.  
 
@@ -438,7 +443,7 @@ void ReCalculate_HCI2(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge
 }
 
 // HCI-TM2 Algorithm  
-int HCI2_TM_Algorithm(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge_Size], int N, int round)
+int HCI2_TM_Algorithm(vector<NODE>& Node, vector<HYPEREDGE>& Hyperedge, int N, int round)
 {
 	int HCI2[Max_Node_Size][2] = { 0 }; // Array to store the IDs of nodes and their CITM values.  
 	int iter_percent = 1;
@@ -475,7 +480,8 @@ int HCI2_TM_Algorithm(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge
 			iter_percent = iter_percent + 1;
 		}
 
-		if (AC_NODE_NUM >= int(double(N) * ActiveRadio)) // Check if enough nodes have been activated.  
+		//if (AC_NODE_NUM >= int(double(N) * ActiveRadio)) // Check if enough nodes have been activated.
+		if(SeedNum>=MAX_SEED_SET_SIZE)  
 		{
 			RECORD[1][iter_percent - 1] = double(AC_NODE_NUM) / double(N);
 			break; // Exit the loop if enough nodes have been activated.  
@@ -487,7 +493,7 @@ int HCI2_TM_Algorithm(NODE(&Node)[Max_Node_Size], HYPEREDGE(&Hyperedge)[Max_Edge
 int main()
 {
 	// File path for the hypergraph data  
-	string File_path_name = "D://QXL//Hypergraph-code//revise//OpenCoade//test//hypergraph-2-ER-10000-3000.txt";
+	string File_path_name = "data/Algebra-question.txt";
 
 	// Arrays to store the number of seed nodes and the running time of algorithms  
 	double Record_Seed_Number[2] = { 0 };
@@ -495,8 +501,8 @@ int main()
 	double Record_Seed_Radio[2] = { 0 };
 
 	// Nodes and edges of the hypergraph  
-	NODE Node[Max_Node_Size];
-	HYPEREDGE Hyperedge[Max_Edge_Size];
+	vector<NODE> Node(Max_Node_Size);
+	vector<HYPEREDGE> Hyperedge(Max_Edge_Size);
 
 	// Build the hypergraph and get the number of nodes  
 	int N = ConstructHypergraph(Node, Hyperedge, File_path_name);
@@ -540,8 +546,8 @@ int main()
 	cout << endl; // Output a new line for better formatting
 
 	// Open a file stream to write to "D://QXL//Hypergraph-code//revise//test//Record-0.5.txt"  
-// This file will record the number of seed nodes, the running time of algorithms, and the ratio of seed nodes  
-	ofstream out("D://QXL//Hypergraph-code//revise//test//Record-Tr0.5.txt");
+	// This file will record the number of seed nodes, the running time of algorithms, and the ratio of seed nodes  
+	ofstream out("output0.txt");
 
 	// Loop through the array to record the results of two algorithms (HCI1-TM and HCI2-TM)  
 	for (int i = 0; i < 2; i++)
@@ -570,7 +576,7 @@ int main()
 
 	// Open a file stream to write to "D://QXL//Hypergraph-code//revise//test//Record-Detail-Tr0.5.txt"  
 	// This file will record detailed information about the activation process (ratio of seed nodes and activated nodes)  
-	ofstream out1("D://QXL//Hypergraph-code//revise//test//Record-Detail-Tr0.5.txt");
+	ofstream out1("output1.txt");
 
 	// Loop through the RECORD array and write the detailed information to the file  
 	for (int k = 0; k < 2500; k++)
@@ -581,7 +587,7 @@ int main()
 
 	// Open a file stream to write to "D://QXL//Hypergraph-code//revise//test//Record-HCI-Tr0.5.txt"  
 	// This file will record the evolution of the maximum HCI value in the hypergraph  
-	ofstream out2("D://QXL//Hypergraph-code//revise//test//Record-HCI-Tr0.5.txt");
+	ofstream out2("output2.txt");
 
 	// Loop through the HCI1_Rec and HCI2_Rec arrays and write their values to the file  
 	for (int j = 0; j < 20000; j++)
@@ -592,7 +598,7 @@ int main()
 
 	// Open a file stream to write to "D://QXL//Hypergraph-code//revise//test//Record-HCI1TM-SeedSet-Tr0.5.txt"  
 	// This file will record the seed sets selected by the algorithms  
-	ofstream out3("D://QXL//Hypergraph-code//revise//test//Record-HCI1TM-SeedSet-Tr0.5.txt");
+	ofstream out3("output3.txt");
 
 	// Loop through the SeedSet arrays and write their values to the file, separated by spaces  
 	for (int j = 0; j < s1; j++)
@@ -602,7 +608,7 @@ int main()
 	out3.close(); // Close the file stream
 	// Open a file stream to write to "D://QXL//Hypergraph-code//revise//test//Record-HCI2TM-SeedSet-Tr0.5.txt"  
 	// This file will record the seed sets selected by the algorithms  
-	ofstream out4("D://QXL//Hypergraph-code//revise//test//Record-HCI2TM-SeedSet-Tr0.5.txt");
+	ofstream out4("output4.txt");
 	for (int j = 0; j < s2; j++)
 	{
 		out4 << SeedSet[1][j] << " ";
